@@ -16,6 +16,7 @@ if t.TYPE_CHECKING:
 DEBUG_ENV_VAR = "RAGAS_DEBUG"
 # constant to tell us that there is no key passed to the llm/embeddings
 NO_KEY = "no-key"
+NO_BASE_URL = "no-base-url"
 
 
 @lru_cache(maxsize=1)
