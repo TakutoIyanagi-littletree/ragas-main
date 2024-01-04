@@ -3,6 +3,8 @@ from __future__ import annotations
 import typing as t
 
 from langchain.chat_models import AzureChatOpenAI, BedrockChat, ChatOpenAI, ChatVertexAI
+from langchain.chat_models.azureml_endpoint import AzureMLChatOnlineEndpoint
+from langchain.chat_models.base import SimpleChatModel
 from langchain.chat_models.base import BaseChatModel
 from langchain.llms import AmazonAPIGateway, AzureOpenAI, Bedrock, OpenAI, VertexAI
 from langchain.llms.base import BaseLLM
@@ -26,6 +28,9 @@ def isBedrock(llm: BaseLLM | BaseChatModel) -> bool:
     return isinstance(llm, Bedrock) or isinstance(llm, BedrockChat)
 
 
+def isAzureMLEndpoint(llm: BaseLLM | SimpleChatModel) -> bool:
+    return isinstance(llm, AzureMLChatOnlineEndpoint)
+  
 def isAmazonAPIGateway(llm: BaseLLM | BaseChatModel) -> bool:
     return isinstance(llm, AmazonAPIGateway)
 
@@ -38,9 +43,10 @@ MULTIPLE_COMPLETION_SUPPORTED = [
     AzureChatOpenAI,
     ChatVertexAI,
     VertexAI,
+    AzureMLChatOnlineEndpoint,
 ]
 MultipleCompletionSupportedLLM = t.Union[
-    OpenAI, ChatOpenAI, AzureOpenAI, AzureChatOpenAI, ChatVertexAI, VertexAI
+    OpenAI, ChatOpenAI, AzureOpenAI, AzureChatOpenAI, ChatVertexAI, VertexAI, AzureMLChatOnlineEndpoint
 ]
 
 
@@ -146,6 +152,8 @@ class LangchainLLM(RagasLLM):
         temperature = 0.2 if n > 1 else 0
         if isBedrock(self.llm) and ("model_kwargs" in self.llm.__dict__):
             self.llm.model_kwargs = {"temperature": temperature}
+        elif isAzureMLEndpoint(self.llm) and ("model_kwargs" in self.llm.__dict__):
+            self.llm.model_kwargs['temperature'] = temperature
         else:
             self.llm.temperature = temperature
 
@@ -200,6 +208,8 @@ class LangchainLLM(RagasLLM):
         temperature = 0.2 if n > 1 else 1e-8
         if isBedrock(self.llm) and ("model_kwargs" in self.llm.__dict__):
             self.llm.model_kwargs = {"temperature": temperature}
+        elif isAzureMLEndpoint(self.llm) and ("model_kwargs" in self.llm.__dict__):
+            self.llm.model_kwargs['temperature'] = temperature
         elif isAmazonAPIGateway(self.llm) and ("model_kwargs" in self.llm.__dict__):
             self.llm.model_kwargs = {"temperature": temperature}
         else:
