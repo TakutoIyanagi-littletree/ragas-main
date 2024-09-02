@@ -148,10 +148,10 @@ class SummarizationScore(MetricWithLLM):
     coeff: float = 0.5
     evaluation_mode: EvaluationMode = EvaluationMode.ca  # type: ignore
     question_generation_prompt: Prompt = field(
-        default_factory=lambda: TEXT_GENERATE_QUESTIONS
+        default_factory=TEXT_GENERATE_QUESTIONS.factory
     )
     answer_generation_prompt: Prompt = field(
-        default_factory=lambda: TEXT_GENERATE_ANSWERS
+        default_factory=TEXT_GENERATE_ANSWERS.factory
     )
     extract_keyphrases_prompt: Prompt = field(
         default_factory=lambda: TEXT_EXTRACT_KEYPHRASES
