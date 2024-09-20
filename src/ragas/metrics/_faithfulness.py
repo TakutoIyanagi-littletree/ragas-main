@@ -1,11 +1,15 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
+import os
 import typing as t
 from dataclasses import dataclass, field
+from string import Template
 
 import numpy as np
+import requests
 from langchain_core.pydantic_v1 import BaseModel, Field
 
 from ragas.dataset_schema import SingleTurnSample
@@ -399,6 +403,180 @@ class FaithulnesswithHHEM(Faithfulness):
             )
             scores += batch_scores
         return sum(scores) / len(scores)
+
+
+MINICHECK_SYSTEM_PROMPT = (
+    "Determine whether the provided claim is consistent with the "
+    "corresponding document. Consistency in this context implies that all "
+    "information presented in the claim is substantiated by the document. "
+    "If not, it should be considered inconsistent. Please assess the "
+    "claim's consistency with the document by responding with either \"Yes\" "
+    "or \"No\"."
+)
+MINICHECK_USER_PROMPT_TEMPLATE = Template("Document: $document\nClaim: $claim")
+
+
+@dataclass
+class MiniCheckExample:
+  document: str = ""
+  claim: str = ""
+
+
+@dataclass
+class FaithfulnesswithMiniCheck(Faithfulness):
+  name: str = "faithfulness_with_minicheck"  # type: ignore
+  device: str = "cpu"
+  batch_size: int = 10
+  max_sequence_len: int = 10000  # max sequence can be 32768
+  use_api: bool = False
+  bespoke_api_key: str = ""
+  max_concurrent_requests: int = 10
+
+  def __post_init__(self):
+    if self.use_api:
+      self.bespoke_api_key = (self.bespoke_api_key if self.bespoke_api_key else
+                              os.environ.get("BESPOKE_API_KEY", ""))
+      if not self.bespoke_api_key:
+        raise ValueError(
+            "No API key found for bespokelabs API. Please get your key "
+            "at https://console.bespokelabs.ai, then provide it "
+            "by passing the bespoke_api_key parameter to the "
+            "constructor or set the BESPOKE_API_KEY environment variable.")
+      self._semaphore = asyncio.Semaphore(self.max_concurrent_requests)
+    else:
+      try:
+        import einops as einops
+        from transformers import AutoModelForCausalLM, AutoTokenizer
+      except ImportError:
+        raise ImportError(
+            "einops, torch, and transformers must be installed to use this feature, "
+            " try `pip install .[all]` to install the dependencies.")
+      self._minicheck = AutoModelForCausalLM.from_pretrained(
+          "bespokelabs/Bespoke-MiniCheck-7B", trust_remote_code=True
+      )
+      self._tokenizer = AutoTokenizer.from_pretrained(
+          "bespokelabs/Bespoke-MiniCheck-7B",
+          trust_remote_code=True)
+      self._minicheck.to(self.device)
+    super().__post_init__()
+
+  def _create_examples(
+      self, row: t.Dict, statements: t.List[str]
+  ) -> t.List[MiniCheckExample]:
+    document = "\n".join(row["retrieved_contexts"])
+    return [MiniCheckExample(document=document, claim=statement)
+            for statement in statements]
+
+  def _decode(self, prompts: t.List[str]):
+    import torch
+    inputs = self._tokenizer(
+        prompts,
+        return_tensors="pt",
+        padding=True,
+        truncation=True,
+        max_length=self.max_sequence_len)
+    inputs = {k: v.to(self.device) for k, v in inputs.items()}
+
+    with torch.no_grad():
+      outputs = self._minicheck.generate(
+          **inputs,
+          max_new_tokens=1,
+          return_dict_in_generate=True,
+          output_scores=True)
+
+    return outputs
+
+  def _extract_scores(self, outputs):
+    import torch
+    logits = outputs.scores[0]
+    probs = torch.softmax(logits, dim=-1)
+    top_5_probs, top_5_indices = torch.topk(probs, 5, dim=-1)
+    scores = []
+    for i in range(logits.shape[0]):
+      top_5_tokens = [
+          self._tokenizer.decode(
+              [idx]).lower() for idx in top_5_indices[i]]
+      yes_prob = sum(
+          prob for token,
+          prob in zip(
+              top_5_tokens,
+              top_5_probs[i]) if token == 'yes')
+      scores.append(int(yes_prob > 0.5))
+
+    return scores
+
+  def _score_examples_locally(
+          self, examples: t.List[MiniCheckExample]) -> t.List[float]:
+    prompts = []
+    for example in examples:
+      user_prompt = MINICHECK_USER_PROMPT_TEMPLATE.substitute(
+          document=example.document, claim=example.claim)
+      message = [
+          {"role": "system", "content": MINICHECK_SYSTEM_PROMPT},
+          {"role": "user", "content": user_prompt},
+      ]
+      prompt = self._tokenizer.apply_chat_template(
+          message, add_generation_prompt=True, tokenize=False)
+      prompts.append(prompt)
+    scores = []
+    for i in range(0, len(prompts), self.batch_size):
+      logits = self._decode(prompts[i:i + self.batch_size])
+      scores_batch = self._extract_scores(logits)
+      scores.extend(scores_batch)
+    return scores
+
+  async def _score_examples_api(
+          self,
+          examples: t.List[MiniCheckExample]) -> t.List[float]:
+    async def request_minicheck(example: MiniCheckExample) -> float:
+      def sync_request_minicheck(example: MiniCheckExample) -> float:
+        try:
+          response = requests.post(
+              "https://api.bespokelabs.ai/v0/minicheck/factcheck",
+              json={
+                  "context": example.document,
+                  "claim": example.claim
+              },
+              headers={"api_key": self.bespoke_api_key}
+          )
+          response.raise_for_status()
+          return int(response.json()['support_prob'] > 0.5)
+        except requests.RequestException as e:
+          logger.warning(f"Bespoke API request failed: {str(e)}")
+          return np.nan
+      loop = asyncio.get_event_loop()
+      return await loop.run_in_executor(
+          None,
+          sync_request_minicheck,
+          example
+      )
+    return await asyncio.gather(*[
+        request_minicheck(example) for example in examples])
+
+  async def _ascore(self: t.Self, row: t.Dict, callbacks: Callbacks) -> float:
+    assert self.llm is not None, "LLM is not set"
+
+    p_value = self._create_statements_prompt(row)
+    statements = await self.llm.generate(
+        p_value,
+        callbacks=callbacks,
+    )
+    statements = await _statements_output_parser.aparse(
+        statements.generations[0][0].text, p_value, self.llm, self.max_retries
+    )
+
+    if statements is None:
+      return np.nan
+
+    statements = [item["simpler_statements"] for item in statements.dicts()]
+    statements = [item for sublist in statements for item in sublist]
+
+    examples = self._create_examples(row, statements)
+    if not self.use_api:
+      scores = self._score_examples_locally(examples)
+    else:
+      scores = await self._score_examples_api(examples)
+    return sum(scores) / len(scores)
 
 
 faithfulness = Faithfulness()

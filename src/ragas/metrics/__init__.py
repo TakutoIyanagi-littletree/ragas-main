@@ -16,13 +16,18 @@ from ragas.metrics._context_precision import (
     context_utilization,
 )
 from ragas.metrics._context_recall import ContextRecall, context_recall
+from ragas.metrics._faithfulness import (
+    Faithfulness,
+    FaithfulnesswithMiniCheck,
+    FaithulnesswithHHEM,
+    faithfulness,
+)
 from ragas.metrics._domain_specific_rubrics import (
     RubricsScoreWithoutReference,
     RubricsScoreWithReference,
     rubrics_score_with_reference,
     rubrics_score_without_reference,
 )
-from ragas.metrics._faithfulness import Faithfulness, FaithulnesswithHHEM, faithfulness
 from ragas.metrics._noise_sensitivity import (
     NoiseSensitivity,
     noise_sensitivity_irrelevant,
@@ -36,6 +41,7 @@ __all__ = [
     "Faithfulness",
     "faithfulness",
     "FaithulnesswithHHEM",
+    "FaithfulnesswithMiniCheck",
     "AnswerSimilarity",
     "answer_similarity",
     "ContextPrecision",
