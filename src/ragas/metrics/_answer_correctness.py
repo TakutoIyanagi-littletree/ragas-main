@@ -53,7 +53,7 @@ class ClassificationWithReason(BaseModel):
 class CorrectnessClassifier(
     PydanticPrompt[QuestionAnswerGroundTruth, ClassificationWithReason]
 ):
-    instruction = "Given a ground truth and an answer statements, analyze each statement and classify them in one of the following categories: TP (true positive): statements that are present in answer that are also directly supported by the one or more statements in ground truth, FP (false positive): statements present in the answer but not directly supported by any statement in ground truth, FN (false negative): statements found in the ground truth but not present in answer. Each statement can only belong to one of the categories. Provide a reason for each classification."
+    instruction = "ground truthとanswer statementsが与えられたとき、各statementsを分析し、以下のカテゴリのいずれかに分類する： TP (true positive): 回答に存在し、ground truthの1つまたは複数のstatementsによって直接サポートされているstatements、FP (false positive): 回答に存在するが、ground truthのstatementsによって直接サポートされていないstatements、FN (false negative): ground truthに存在するが、回答には存在しないstatements。各statementsは、いずれかのカテゴリにのみ属することができます。それぞれの分類の理由を書いてください。"
     input_model = QuestionAnswerGroundTruth
     output_model = ClassificationWithReason
     examples = [
