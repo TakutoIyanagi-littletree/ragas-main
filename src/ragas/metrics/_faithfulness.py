@@ -69,11 +69,11 @@ class SentencesSimplified(BaseModel):
 
 # examples
 example_input_1 = FaithfulnessStatements(
-    question="Who was Albert Einstein and what is he best known for?",
-    answer="He was a German-born theoretical physicist, widely acknowledged to be one of the greatest and most influential physicists of all time. He was best known for developing the theory of relativity, he also made important contributions to the development of the theory of quantum mechanics.",
+    question="アルベルト・アインシュタインとはどんな人物で、何が最もよく知られているか？",
+    answer="彼はドイツ生まれの理論物理学者であり、史上最も偉大で影響力のある物理学者の一人として広く認められている。相対性理論を発展させたことで知られるが、量子力学理論の発展にも重要な貢献をした。",
     sentences={
-        0: "He was a German-born theoretical physicist, widely acknowledged to be one of the greatest and most influential physicists of all time.",
-        1: "He was best known for developing the theory of relativity, he also made important contributions to the development of the theory of quantum mechanics.",
+        0: "彼はドイツ生まれの理論物理学者であり、史上最も偉大で影響力のある物理学者の一人として広く認められている。",
+        1: "相対性理論を発展させたことで知られるが、量子力学理論の発展にも重要な貢献をした。",
     },
 )
 
@@ -82,15 +82,15 @@ example_output_1 = SentencesSimplified(
         SentenceComponents(
             sentence_index=0,
             simpler_statements=[
-                "Albert Einstein was a German-born theoretical physicist.",
-                "Albert Einstein is recognized as one of the greatest and most influential physicists of all time.",
+                "アルベルト・アインシュタインはドイツ生まれの理論物理学者である。",
+                "アルベルト・アインシュタインは、史上最も偉大で最も影響力のある物理学者の一人として認められている。",
             ],
         ),
         SentenceComponents(
             sentence_index=1,
             simpler_statements=[
-                "Albert Einstein was best known for developing the theory of relativity.",
-                "Albert Einstein also made important contributions to the development of the theory of quantum mechanics.",
+                "アルベルト・アインシュタインは相対性理論の開発で最もよく知られている。",
+                "アルベルト・アインシュタインもまた、量子力学の理論の発展に重要な貢献をした。",
             ],
         ),
     ]
@@ -98,7 +98,7 @@ example_output_1 = SentencesSimplified(
 
 
 class LongFormAnswerPrompt(PydanticPrompt[FaithfulnessStatements, SentencesSimplified]):
-    instruction = "Given a question, an answer, and sentences from the answer analyze the complexity of each sentence given under 'sentences' and break down each sentence into one or more fully understandable statements while also ensuring no pronouns are used in each statement. Format the outputs in JSON."
+    instruction = "question、answer、sentencesが与えられた場合、'sentences'の下に与えられた各文の複雑さを分析し、各文で代名詞が使用されていないことも確認しながら、各文を1つ以上の完全に理解可能な文に分解します。出力はJSON形式でフォーマット化する。"
     input_model = FaithfulnessStatements
     output_model = SentencesSimplified
     examples = [(example_input_1, example_output_1)]
