@@ -123,15 +123,15 @@ class CorrectnessClassifier(
             ClassificationWithReason(
                 TP=[
                     StatementsWithReason(
-                        statement="The boiling point of water is 100 degrees Celsius at sea level",
-                        reason="This statement is directly supported by the ground truth which specifies the boiling point of water as 100 degrees Celsius at sea level.",
+                        statement="水の沸点は海面で摂氏100度です。",
+                        reason="この発言は、水の沸点が海抜で摂氏100度であるという根拠によって直接的に裏付けられている。",
                     )
                 ],
                 FP=[],
                 FN=[
                     StatementsWithReason(
-                        statement="The boiling point of water can change with altitude.",
-                        reason="This additional information about how the boiling point of water can vary with altitude is not mentioned in the answer.",
+                        statement="水の沸点は標高によって変化する。",
+                        reason="水の沸点が高度によってどのように変化するかについてのこの追加情報は、答えには書かれていない。",
                     )
                 ],
             ),
