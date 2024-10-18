@@ -120,40 +120,40 @@ class NLIStatementInput(BaseModel):
 
 
 class NLIStatementPrompt(PydanticPrompt[NLIStatementInput, NLIStatementOutput]):
-    instruction = "Your task is to judge the faithfulness of a series of statements based on a given context. For each statement you must return verdict as 1 if the statement can be directly inferred based on the context or 0 if the statement can not be directly inferred based on the context."
+    instruction = "あなたのタスクは、与えられたcontextに基づいて一連のstatementの信憑性を判定することである。それぞれのstatementについて、そのstatementがcontextに基づいて直接推論できる場合は1、contextに基づいて直接推論できない場合は0として評定を返さなければならない。"
     input_model = NLIStatementInput
     output_model = NLIStatementOutput
     examples = [
         (
             NLIStatementInput(
-                context="""John is a student at XYZ University. He is pursuing a degree in Computer Science. He is enrolled in several courses this semester, including Data Structures, Algorithms, and Database Management. John is a diligent student and spends a significant amount of time studying and completing assignments. He often stays late in the library to work on his projects.""",
+                context="""ジョンはXYZ大学の学生である。コンピュータ・サイエンスの学位を取得しようとしている。今学期は、データ構造、アルゴリズム、データベース管理など、いくつかのコースを履修している。ジョンは勤勉な学生で、かなりの時間を勉強に費やし、課題をこなしている。図書館に遅くまで残ってプロジェクトに取り組むことも多い。""",
                 statements=[
-                    "John is majoring in Biology.",
-                    "John is taking a course on Artificial Intelligence.",
-                    "John is a dedicated student.",
-                    "John has a part-time job.",
+                    "ジョンは生物学を専攻している。",
+                    "ジョンは人工知能のコースを取っています。",
+                    "ジョンは熱心な学生です。",
+                    "ジョンはアルバイトをしている。",
                 ],
             ),
             NLIStatementOutput(
                 statements=[
                     StatementFaithfulnessAnswer(
-                        statement="John is majoring in Biology.",
-                        reason="John's major is explicitly mentioned as Computer Science. There is no information suggesting he is majoring in Biology.",
+                        statement="ジョンは生物学を専攻している。",
+                        reason="ジョンの専攻はコンピューターサイエンスと明記されている。生物学を専攻していることを示唆する情報はない。",
                         verdict=0,
                     ),
                     StatementFaithfulnessAnswer(
-                        statement="John is taking a course on Artificial Intelligence.",
-                        reason="The context mentions the courses John is currently enrolled in, and Artificial Intelligence is not mentioned. Therefore, it cannot be deduced that John is taking a course on AI.",
+                        statement="ジョンは人工知能のコースを取っています。",
+                        reason="contextにはジョンが現在受講しているコースが記されているが、人工知能については触れられていない。したがって、ジョンがAIに関するコースを受講しているとは推論できない。",
                         verdict=0,
                     ),
                     StatementFaithfulnessAnswer(
-                        statement="John is a dedicated student.",
-                        reason="The context states that he spends a significant amount of time studying and completing assignments. Additionally, it mentions that he often stays late in the library to work on his projects, which implies dedication.",
+                        statement="ジョンは熱心な学生です。",
+                        reason="contextによれば、彼はかなりの時間を勉強と課題の完成に費やしている。さらに、彼はしばしば遅くまで図書館に残ってプロジェクトに取り組んでいることが書かれており、これは献身を意味する。",
                         verdict=1,
                     ),
                     StatementFaithfulnessAnswer(
-                        statement="John has a part-time job.",
-                        reason="There is no information given in the context about John having a part-time job.",
+                        statement="ジョンはアルバイトをしている。",
+                        reason="ジョンがアルバイトをしているという情報は、contextにはない。",
                         verdict=0,
                     ),
                 ]
@@ -161,16 +161,16 @@ class NLIStatementPrompt(PydanticPrompt[NLIStatementInput, NLIStatementOutput]):
         ),
         (
             NLIStatementInput(
-                context="Photosynthesis is a process used by plants, algae, and certain bacteria to convert light energy into chemical energy.",
+                context="光合成は、植物、藻類、ある種のバクテリアが光エネルギーを化学エネルギーに変換するために用いるプロセスである。",
                 statements=[
-                    "Albert Einstein was a genius.",
+                    "アルベルト・アインシュタインは天才だった。",
                 ],
             ),
             NLIStatementOutput(
                 statements=[
                     StatementFaithfulnessAnswer(
-                        statement="Albert Einstein was a genius.",
-                        reason="The context and statement are unrelated",
+                        statement="アルベルト・アインシュタインは天才だった。",
+                        reason="contextとstatementは無関係である",
                         verdict=0,
                     )
                 ]
