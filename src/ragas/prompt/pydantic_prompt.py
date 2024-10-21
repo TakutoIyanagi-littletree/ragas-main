@@ -75,7 +75,7 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
             + self._generate_output_signature()
             + "\n"
             + self._generate_examples()
-            + "\nNow perform the above instruction with the following input\n"
+            + "\n次の入力で上記の命令を実行する。\n"
             + (
                 "input: " + data.model_dump_json(indent=4) + "\n"
                 if data is not None
