@@ -41,8 +41,7 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
 
     def _generate_output_signature(self, indent: int = 4) -> str:
         return (
-            f"Please return the output in a JSON format that complies with the "
-            f"following schema as specified in JSON Schema and OpenAPI specification:\n"
+            f"JSON SchemaおよびOpenAPI仕様で規定されている以下のスキーマに準拠したJSON形式で出力してください：\n"
             f"{self.output_model.model_json_schema()}"
         )
 
