@@ -61,7 +61,7 @@ class PydanticPrompt(BasePrompt, t.Generic[InputModel, OutputModel]):
                 )
 
             return (
-                "These are some examples to show how to perform the above instruction\n"
+                "以下は、上記の命令の実行方法を示すいくつかの例である。\n"
                 + "\n\n".join(example_strings)
             )
         # if no examples are provided
